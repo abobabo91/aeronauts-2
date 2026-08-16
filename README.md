@@ -78,11 +78,19 @@ An error occurred trying to start process 'UnitySetup-WebGL-Support-for-Editor-6
 The requested operation requires elevation.
 ```
 
-Unity's module installers need administrator rights. Re-run from an elevated shell before attempting a browser build:
+Unity's module installers need administrator rights. Run this **from an elevated PowerShell** before attempting a browser build:
 
 ```powershell
-& "$env:LOCALAPPDATA\Unity\bin\unity.exe" install-modules --version 6000.0.81f1 --module webgl --childModules --accept-eula
+& "$env:LOCALAPPDATA\Unity\bin\unity.exe" install-modules -e 6000.0.81f1 --module webgl -f --accept-eula
 ```
+
+Three traps in that one line, all hit here:
+
+- The editor version goes in `-e/--editor-version`. Do **not** write `--version` — that is the CLI's own global flag, so the command prints `1.0.0-beta.5` and exits without installing anything.
+- `-f` (force) is required. The Hub's state database reports `webgl → Installed, 4.05 GB` even though `PlaybackEngines/` has no `WebGLSupport` folder, so a plain install is a no-op that exits `Error: No modules found to install.`
+- Without real elevation it fails ~14 ms after launching `UnitySetup-WebGL-Support-for-Editor-<version>.exe`, reporting only `1 item(s) failed to install`. The first attempt gave the honest message: `The requested operation requires elevation`. `install-modules` does have a UAC helper (`--no-elevate` opts out), but the prompt has to actually be accepted.
+
+Verify against disk afterwards — `Editor/Data/PlaybackEngines/` must contain `WebGLSupport`. Do not trust `unity editors` or `install-modules --list`; both reported Web as installed here when it was not.
 
 `unity editors` reports `6000.3.22f1` with modules `Web, Windows`. The Hub log shows a transient `2 item(s) failed to install` during the WebGL module install; the retry succeeded and `Editor/Data/PlaybackEngines` contains both `WebGLSupport` and `windowsstandalonesupport`.
 
