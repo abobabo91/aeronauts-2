@@ -21,19 +21,34 @@ Windows IL2CPP support is installed, but a native Windows build also requires Vi
 
 ## First open
 
-1. Start Unity Hub and sign in with a Unity account.
-2. Activate a Unity Personal license if the account is eligible.
-3. Add this folder as an existing project and open it with Unity `6000.3.22f1`.
-4. Allow the initial package restore and asset import to finish.
+The project has never completed a licensed import. No Unity account is signed in on this workstation, so the editor exits before importing:
 
-The command-line template copy completed, but its first import is currently blocked by the missing Unity license. Unity will generate `.meta` files for the new architecture folders during the first licensed import.
+```
+$ unity auth status   → You are not signed in. Run unity auth login to sign in.
+$ unity license       → (no licenses)
+```
+
+`Unity.Licensing.Client.log` records the matching failure — `Failed to update license file. [Code: 401] Token not found in cache`, then `No ULF license found`.
+
+Sign in, then activate:
+
+```powershell
+& "$env:LOCALAPPDATA\Unity\bin\unity.exe" auth login       # opens a browser; must be completed within ~2 min or it exits "Sign-in timed out"
+& "$env:LOCALAPPDATA\Unity\bin\unity.exe" license activate  # not yet run — no account has been signed in
+```
+
+Then open the project with `unity open --project <this folder>`, or add it in the Hub and open it with `6000.3.22f1`. Unity generates `.meta` files for the architecture folders during the first licensed import, so expect a large first commit of `.meta` files afterwards.
+
+Use the `unity` CLI, not the Hub's old CLI. Hub `3.20.1` no longer accepts the documented `-- --headless` form — it fails with `Cannot find module '--headless'`, and the bare `--headless` flag fails with `bad option`. The editor and its Web/Windows modules were installed through the `unity` CLI (`1.0.0-beta.5`), which also covers `auth`, `license`, `open`, `run`, `build` and `test`.
 
 Installed tool locations on this workstation:
 
-- Unity Hub: `C:\Program Files\Unity Hub\Unity Hub.exe`
+- Unity CLI: `C:\Users\abele\AppData\Local\Unity\bin\unity.exe` (`1.0.0-beta.5`)
 - Unity Editor: `C:\Users\abele\AppData\Local\Programs\Unity\Hub\Editor\6000.3.22f1\Editor\Unity.exe`
-- Unity CLI: `C:\Users\abele\AppData\Local\Unity\bin\unity.exe`
+- Unity Hub: `C:\Program Files\Unity Hub\Unity Hub.exe` (`3.20.1`)
 - Blender: `C:\Users\abele\AppData\Local\Programs\Blender\5.2.0\blender.exe`
+
+`unity editors` reports `6000.3.22f1` with modules `Web, Windows`. The Hub log shows a transient `2 item(s) failed to install` during the WebGL module install; the retry succeeded and `Editor/Data/PlaybackEngines` contains both `WebGLSupport` and `windowsstandalonesupport`.
 
 Blender portable archive SHA-256: `2D184B626C001692C362291911293B6A297179D618D95E9E9192C3A80318ADC4`.
 
