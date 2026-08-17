@@ -1,0 +1,73 @@
+{
+    "name": "FlightLab",
+    "maps": [
+        {
+            "name": "Flight",
+            "id": "274e21ca-c875-44e8-8e4f-61112965fc11",
+            "actions": [
+                { "name": "BodySteer", "type": "Value", "id": "54de55b4-2e3a-46aa-a7de-29e15bc137f5", "expectedControlType": "Vector2", "processors": "", "interactions": "", "initialStateCheck": true },
+                { "name": "RollLeft", "type": "Button", "id": "58407088-1a15-4dcb-91a8-c26756ee2026", "expectedControlType": "Button", "processors": "", "interactions": "", "initialStateCheck": true },
+                { "name": "RollRight", "type": "Button", "id": "0e7e1cd8-a148-48ec-981e-237f5eeb5060", "expectedControlType": "Button", "processors": "", "interactions": "", "initialStateCheck": true },
+                { "name": "Accelerate", "type": "Button", "id": "bb3abf7c-ea03-4876-81ef-f12f112e3ab3", "expectedControlType": "Button", "processors": "", "interactions": "", "initialStateCheck": true },
+                { "name": "Airbrake", "type": "Button", "id": "6bba80c4-e762-4b5c-9a70-b3e8d60269ac", "expectedControlType": "Button", "processors": "", "interactions": "", "initialStateCheck": true },
+                { "name": "Boost", "type": "Button", "id": "f5c4f42e-cf5d-4d31-8112-beb9a7617687", "expectedControlType": "Button", "processors": "", "interactions": "", "initialStateCheck": true },
+                { "name": "Aim", "type": "PassThrough", "id": "b51fe770-af7c-440b-a175-09e300209cec", "expectedControlType": "Vector2", "processors": "", "interactions": "", "initialStateCheck": false },
+                { "name": "PrimaryFire", "type": "Button", "id": "1d31b745-caf1-48ae-82ee-f3064058c13e", "expectedControlType": "Button", "processors": "", "interactions": "", "initialStateCheck": true },
+                { "name": "SecondaryFire", "type": "Button", "id": "54991055-354e-4cd9-95c0-a34728630753", "expectedControlType": "Button", "processors": "", "interactions": "", "initialStateCheck": true },
+                { "name": "Reset", "type": "Button", "id": "fb2fc665-fe16-46fe-9ca4-829909efea97", "expectedControlType": "Button", "processors": "", "interactions": "Press", "initialStateCheck": false },
+                { "name": "ToggleAimLimits", "type": "Button", "id": "2a3042c5-49f4-42f1-b08e-492578e53c3b", "expectedControlType": "Button", "processors": "", "interactions": "Press", "initialStateCheck": false },
+                { "name": "ToggleView", "type": "Button", "id": "8c31a326-22fc-44d6-87ca-43180b42acc1", "expectedControlType": "Button", "processors": "", "interactions": "Press", "initialStateCheck": false }
+            ],
+            "bindings": [
+                { "name": "WASD", "id": "0c937b86-f564-4a7d-ab33-d57b839d38e6", "path": "2DVector", "interactions": "", "processors": "", "groups": "", "action": "BodySteer", "isComposite": true, "isPartOfComposite": false },
+                { "name": "up", "id": "766d43c7-1c68-46dd-903e-6acfc13e6daa", "path": "<Keyboard>/w", "interactions": "", "processors": "", "groups": "Keyboard&Mouse", "action": "BodySteer", "isComposite": false, "isPartOfComposite": true },
+                { "name": "down", "id": "69137730-8ed7-4345-8c0b-120583d9cff7", "path": "<Keyboard>/s", "interactions": "", "processors": "", "groups": "Keyboard&Mouse", "action": "BodySteer", "isComposite": false, "isPartOfComposite": true },
+                { "name": "left", "id": "62e95203-21be-48ba-a63a-81369a969ead", "path": "<Keyboard>/a", "interactions": "", "processors": "", "groups": "Keyboard&Mouse", "action": "BodySteer", "isComposite": false, "isPartOfComposite": true },
+                { "name": "right", "id": "158a1cb5-09c9-4609-863c-c1cc5aef3073", "path": "<Keyboard>/d", "interactions": "", "processors": "", "groups": "Keyboard&Mouse", "action": "BodySteer", "isComposite": false, "isPartOfComposite": true },
+                { "name": "", "id": "3de47e73-7204-433b-b869-1167ebdf9c11", "path": "<Gamepad>/leftStick", "interactions": "", "processors": "stickDeadzone", "groups": "Gamepad", "action": "BodySteer", "isComposite": false, "isPartOfComposite": false },
+
+                { "name": "", "id": "44140100-5eb5-48bb-92e7-eb601ff58fb0", "path": "<Keyboard>/q", "interactions": "", "processors": "", "groups": "Keyboard&Mouse", "action": "RollLeft", "isComposite": false, "isPartOfComposite": false },
+                { "name": "", "id": "fa8c6edc-c98c-4fa2-b3d8-857261b10cec", "path": "<Gamepad>/leftShoulder", "interactions": "", "processors": "", "groups": "Gamepad", "action": "RollLeft", "isComposite": false, "isPartOfComposite": false },
+                { "name": "", "id": "66150ff7-f4ca-44e1-bc54-f75a6901178b", "path": "<Keyboard>/e", "interactions": "", "processors": "", "groups": "Keyboard&Mouse", "action": "RollRight", "isComposite": false, "isPartOfComposite": false },
+                { "name": "", "id": "4408db17-57e5-4ae9-95d5-bdf136cd39d1", "path": "<Gamepad>/rightShoulder", "interactions": "", "processors": "", "groups": "Gamepad", "action": "RollRight", "isComposite": false, "isPartOfComposite": false },
+
+                { "name": "", "id": "ef713091-11dd-49f4-ac99-33740421243a", "path": "<Keyboard>/space", "interactions": "", "processors": "", "groups": "Keyboard&Mouse", "action": "Accelerate", "isComposite": false, "isPartOfComposite": false },
+                { "name": "", "id": "06d72ed1-ee86-4cec-8172-b3779b529c60", "path": "<Gamepad>/buttonSouth", "interactions": "", "processors": "", "groups": "Gamepad", "action": "Accelerate", "isComposite": false, "isPartOfComposite": false },
+                { "name": "", "id": "3c43da00-cec1-4a48-9f04-ac8cf67bb53d", "path": "<Keyboard>/leftCtrl", "interactions": "", "processors": "", "groups": "Keyboard&Mouse", "action": "Airbrake", "isComposite": false, "isPartOfComposite": false },
+                { "name": "", "id": "216641f6-4592-4c05-913b-335141386d08", "path": "<Gamepad>/buttonWest", "interactions": "", "processors": "", "groups": "Gamepad", "action": "Airbrake", "isComposite": false, "isPartOfComposite": false },
+                { "name": "", "id": "0368e496-840b-4fb6-8103-1aa70fe96708", "path": "<Keyboard>/leftShift", "interactions": "", "processors": "", "groups": "Keyboard&Mouse", "action": "Boost", "isComposite": false, "isPartOfComposite": false },
+                { "name": "", "id": "cd5caa4d-dd94-4e31-8ce9-68537770178e", "path": "<Gamepad>/buttonEast", "interactions": "", "processors": "", "groups": "Gamepad", "action": "Boost", "isComposite": false, "isPartOfComposite": false },
+
+                { "name": "", "id": "1d1955bd-0e58-4140-9483-ddab462823dd", "path": "<Pointer>/delta", "interactions": "", "processors": "", "groups": "Keyboard&Mouse", "action": "Aim", "isComposite": false, "isPartOfComposite": false },
+                { "name": "", "id": "4bf73358-00ae-4240-9c22-3fb6ae136b87", "path": "<Gamepad>/rightStick", "interactions": "", "processors": "", "groups": "Gamepad", "action": "Aim", "isComposite": false, "isPartOfComposite": false },
+                { "name": "", "id": "78d54723-e1fb-4482-82c6-7934efffd3e7", "path": "<Mouse>/leftButton", "interactions": "", "processors": "", "groups": "Keyboard&Mouse", "action": "PrimaryFire", "isComposite": false, "isPartOfComposite": false },
+                { "name": "", "id": "9dcd6978-1a0d-429e-a9ae-73ab2570cc37", "path": "<Gamepad>/rightTrigger", "interactions": "", "processors": "", "groups": "Gamepad", "action": "PrimaryFire", "isComposite": false, "isPartOfComposite": false },
+                { "name": "", "id": "4426dc3e-2e7d-42b2-92b0-2add6467855e", "path": "<Mouse>/rightButton", "interactions": "", "processors": "", "groups": "Keyboard&Mouse", "action": "SecondaryFire", "isComposite": false, "isPartOfComposite": false },
+                { "name": "", "id": "4f271516-f338-40b5-a5fc-d3b530591461", "path": "<Gamepad>/leftTrigger", "interactions": "", "processors": "", "groups": "Gamepad", "action": "SecondaryFire", "isComposite": false, "isPartOfComposite": false },
+                { "name": "", "id": "c7b2ac6b-4d0c-4bb6-8e9e-84f505fba5ee", "path": "<Keyboard>/r", "interactions": "", "processors": "", "groups": "Keyboard&Mouse", "action": "Reset", "isComposite": false, "isPartOfComposite": false },
+                { "name": "", "id": "72b2feda-583d-433d-91c4-12bf1e19f753", "path": "<Gamepad>/start", "interactions": "", "processors": "", "groups": "Gamepad", "action": "Reset", "isComposite": false, "isPartOfComposite": false },
+                { "name": "", "id": "3d524d4c-8ec6-4d44-9b7b-97b43986f7ef", "path": "<Keyboard>/v", "interactions": "", "processors": "", "groups": "Keyboard&Mouse", "action": "ToggleAimLimits", "isComposite": false, "isPartOfComposite": false },
+                { "name": "", "id": "f758e48f-b49a-4ce8-a95d-c72a063006b9", "path": "<Gamepad>/select", "interactions": "", "processors": "", "groups": "Gamepad", "action": "ToggleAimLimits", "isComposite": false, "isPartOfComposite": false },
+                { "name": "", "id": "c897bfad-dc3c-4258-a416-1acd2b63206c", "path": "<Keyboard>/c", "interactions": "", "processors": "", "groups": "Keyboard&Mouse", "action": "ToggleView", "isComposite": false, "isPartOfComposite": false },
+                { "name": "", "id": "17b70f54-37a3-4af6-95ed-3ba9cc9588c6", "path": "<Gamepad>/rightStickPress", "interactions": "", "processors": "", "groups": "Gamepad", "action": "ToggleView", "isComposite": false, "isPartOfComposite": false }
+            ]
+        }
+    ],
+    "controlSchemes": [
+        {
+            "name": "Keyboard&Mouse",
+            "bindingGroup": "Keyboard&Mouse",
+            "devices": [
+                { "devicePath": "<Keyboard>", "isOptional": false, "isOR": false },
+                { "devicePath": "<Mouse>", "isOptional": false, "isOR": false }
+            ]
+        },
+        {
+            "name": "Gamepad",
+            "bindingGroup": "Gamepad",
+            "devices": [
+                { "devicePath": "<Gamepad>", "isOptional": false, "isOR": false }
+            ]
+        }
+    ]
+}

@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b6133016a5e97544593ae61ff13190c4, type: 3}
+  m_Name: FlightTuning
+  m_EditorClassIdentifier: 
+  maxSpeed: 45
+  acceleration: 32
+  airbrakeDeceleration: 55
+  turnMomentumDeceleration: 38
+  turnMomentumExponent: 2
+  boostMaxSpeed: 75
+  boostAcceleration: 48
+  overspeedDeceleration: 14
+  boostCapacity: 1
+  boostDrainPerSecond: 0.32
+  boostRegenerationPerSecond: 0.16
+  pitchRate: 130
+  yawRate: 82
+  rollRate: 200
+  airbrakeTurnMultiplier: 2.15
+  automaticRollDuration: 0.4
+  perfectBoostExitWindow: 0.15
+  perfectBoostMinimumAirbrakeDuration: 0.18
+  perfectBoostMinimumEntrySpeed: 18
+  perfectBoostDuration: 0.22
+  perfectBoostAccelerationBonus: 34

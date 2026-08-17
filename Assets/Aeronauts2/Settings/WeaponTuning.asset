@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 886b29b845014b2d97ab3ac04ca4c65e, type: 3}
+  m_Name: WeaponTuning
+  m_EditorClassIdentifier: 
+  primaryProjectileSpeed: 120
+  primaryProjectileRadius: 0.16
+  primaryProjectileLifetime: 3
+  primaryShotsPerSecond: 8
+  primaryDamage: 16
+  railgunRange: 500
+  railgunCooldown: 0.85
+  railgunCapacity: 3
+  railgunDamage: 80
+  criticalDamageMultiplier: 2.5

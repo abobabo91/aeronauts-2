@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8333b674a54254e4198ec03e5c1ef636, type: 3}
+  m_Name: AimTuning
+  m_EditorClassIdentifier: 
+  mouseDegreesPerPixel: 0.08
+  controllerDeadZone: 0.15
+  controllerResponseExponent: 1.6
+  controllerDegreesPerSecond: 190
+  defaultLimitMode: 0
+  constrainedHorizontalDegrees: 110
+  constrainedUpDegrees: 78
+  constrainedDownDegrees: 78
+  full360HorizontalDegrees: 180
+  full360UpDegrees: 89
+  full360DownDegrees: 89
+  distance: 10
+  height: 2.2
+  shoulderOffset: 1.4
+  followSharpness: 18

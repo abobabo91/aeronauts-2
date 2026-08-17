@@ -1,6 +1,6 @@
 # Aeronauts 2
 
-Foundation for a high-skill competitive aerial arena shooter. This repository currently contains a Unity URP project, tooling configuration, project structure, and design constraints. It contains no custom gameplay code.
+Foundation for a high-skill competitive aerial arena shooter. The current playable is an offline greybox Flight Lab with fixed-tick flight, keyboard/controller input, independent configurable aim, a centered reticle, bank-to-turn movement, momentum management, timed airbrake exits, finite-speed primary projectiles, an instant railgun, precision target regions, and live movement/combat diagnostics.
 
 `Aeronauts 2` is an internal working title. Before any public release, confirm naming rights and replace all references if necessary. Do not reuse assets, characters, audio, branding, or code from the 1999 PlayStation game *Aironauts*.
 
@@ -10,7 +10,7 @@ Foundation for a high-skill competitive aerial arena shooter. This repository cu
 - Universal Render Pipeline `17.0.4` (builtin, with SRP Core `17.0.4`)
 - Unity Input System `1.20.0`
 - Unity Test Framework `1.6.0`
-- Windows IL2CPP Build Support — **Web Build Support is not yet installed** (see below)
+- Web Build Support and Windows IL2CPP Build Support — both verified directly under the editor's `PlaybackEngines` folder
 - Blender `5.2.0 LTS`
 - Git LFS `3.5.1`
 - Visual Studio Code `1.133.0` with Microsoft C#, C# Dev Kit, and Unity extensions
@@ -67,32 +67,13 @@ Installed tool locations on this workstation:
 - Unity Hub: `C:\Program Files\Unity Hub\Unity Hub.exe` (`3.20.1`)
 - Blender: `C:\Users\abele\AppData\Local\Programs\Blender\5.2.0\blender.exe`
 
-`6000.3.22f1` is also installed but unusable for this project — see above. It can be removed with `unity uninstall 6000.3.22f1`.
+`6000.3.22f1` was tested, found unusable for this project, and removed from this workstation. Do not reinstall or retarget to Unity 6.3 until a patch newer than `6000.3.22f1` has been verified against a clean URP project.
 
-### Outstanding: Web Build Support
+### Build support verification
 
-`Editor/Data/PlaybackEngines/` for `6000.0.81f1` contains only `windowsstandalonesupport`. The Web module install failed:
+`6000.0.81f1/Editor/Data/PlaybackEngines/` contains both `WebGLSupport` (4.05 GB) and `windowsstandalonesupport` (0.79 GB). A complete WebGL build now succeeds through `Aeronauts2.Editor.Build.BuildPipeline.BuildWebGL`; the first cold-cache build took 10m37s and produced a 12.3 MB local output including a 7.6 MB Brotli-compressed `.wasm.br`. Build output stays ignored under `Build/WebGL`.
 
-```
-An error occurred trying to start process 'UnitySetup-WebGL-Support-for-Editor-6000.0.81f1.exe' …
-The requested operation requires elevation.
-```
-
-Unity's module installers need administrator rights. Run this **from an elevated PowerShell** before attempting a browser build:
-
-```powershell
-& "$env:LOCALAPPDATA\Unity\bin\unity.exe" install-modules -e 6000.0.81f1 --module webgl -f --accept-eula
-```
-
-Three traps in that one line, all hit here:
-
-- The editor version goes in `-e/--editor-version`. Do **not** write `--version` — that is the CLI's own global flag, so the command prints `1.0.0-beta.5` and exits without installing anything.
-- `-f` (force) is required. The Hub's state database reports `webgl → Installed, 4.05 GB` even though `PlaybackEngines/` has no `WebGLSupport` folder, so a plain install is a no-op that exits `Error: No modules found to install.`
-- Without real elevation it fails ~14 ms after launching `UnitySetup-WebGL-Support-for-Editor-<version>.exe`, reporting only `1 item(s) failed to install`. The first attempt gave the honest message: `The requested operation requires elevation`. `install-modules` does have a UAC helper (`--no-elevate` opts out), but the prompt has to actually be accepted.
-
-Verify against disk afterwards — `Editor/Data/PlaybackEngines/` must contain `WebGLSupport`. Do not trust `unity editors` or `install-modules --list`; both reported Web as installed here when it was not.
-
-`unity editors` reports `6000.3.22f1` with modules `Web, Windows`. The Hub log shows a transient `2 item(s) failed to install` during the WebGL module install; the retry succeeded and `Editor/Data/PlaybackEngines` contains both `WebGLSupport` and `windowsstandalonesupport`.
+Do not trust `unity editors` or `install-modules --list` for module verification. Both have reported modules as installed when their playback-engine folders were absent.
 
 Blender portable archive SHA-256: `2D184B626C001692C362291911293B6A297179D618D95E9E9192C3A80318ADC4`.
 
@@ -103,6 +84,72 @@ Blender portable archive SHA-256: `2D184B626C001692C362291911293B6A297179D618D95
 - `Packages/`: pinned Unity packages
 - `ProjectSettings/`: shared Unity configuration
 - `docs/`: durable gameplay and technical decisions
+
+## Flight Lab development
+
+Open `Assets/Aeronauts2/Scenes/FlightLab/FlightLab.unity` and iterate in Editor Play Mode. The current controls and tuning are documented in `docs/controls.md`; the editable `FlightTuning`, `AimTuning`, `InputTuning`, `WeaponTuning`, and `TargetTuning` assets are under `Assets/Aeronauts2/Settings/`.
+
+The current movement skill loop is roll to choose a turning plane, pitch through the turn, use airbrake when a tighter hook is worth the speed loss, then tap boost shortly after release for an earned slingshot burst. Airbrake overrides acceleration and boost while held. There is no scripted 180-degree action: a reversal is performed through the same airbrake-and-steering physics. Hold Q/E (controller bumpers) for manual roll or double-tap one side for a committed 360-degree roll.
+
+Combat deliberately separates two aim skills. Left mouse/right trigger fires exact, zero-gravity primary bolts at `120` world units/second, so moving targets require lead. Right mouse/left trigger fires an instantaneous hitscan railgun with a three-shot reserve. The centered camera ray selects the intended point, but both authoritative shots originate at the center of the shared head/cockpit region. Player-owned colliders are ignored by the shot query; cover between that origin and the point absorbs the shot even when the third-person camera can see around it, and the HUD warns `HEAD ORIGIN BLOCKED`. Body and small cockpit regions report separate hits; shield, hull, damage, cooldown, and reserve values are placeholders in data assets for later playtesting.
+
+Aim View and Forward View are gameplay camera states. Aim View orbits the camera around the aircraft with independent weapon aim, allowing side/front views of the shared frame while the centered crosshair remains the firing direction. Forward View freezes independent aim and aligns camera, crosshair, and weapons with body forward. Press `C` or the controller right stick to toggle; returning to Aim View begins from the current forward direction rather than snapping to a stale angle.
+
+Aim limits are body-relative and live in `AimTuning.asset`. The default constrained profile permits `110` degrees to either side and `78` degrees up/down; the full-360 profile permits `180` degrees to either side and `89` degrees up/down. The FlightLab-only comparison switch is `V` or controller Select. Turning the body does not drag an in-bounds Aim View camera, while crossing a configured edge clamps it; resetting flight recenters aim on the body.
+
+Rebuild the generated greybox scene after changing its editor utility:
+
+```powershell
+& "$env:LOCALAPPDATA\Programs\Unity\Hub\Editor\6000.0.81f1\Editor\Unity.exe" `
+  -batchmode -quit -nographics -projectPath . `
+  -executeMethod Aeronauts2.Editor.FlightLabSceneBuilder.Build `
+  -logFile .\Logs\flightlab-build.log
+```
+
+Run the fixed-tick movement, input-gesture, weapon-state, damage-region, and structure tests:
+
+```powershell
+& "$env:LOCALAPPDATA\Programs\Unity\Hub\Editor\6000.0.81f1\Editor\Unity.exe" `
+  -batchmode -nographics -projectPath . -runTests -testPlatform EditMode `
+  -testResults .\Logs\editmode-results.xml -logFile .\Logs\editmode-tests.log
+```
+
+Run the scene startup smoke test by changing `EditMode` to `PlayMode` and the two output filenames to `playmode-results.xml` and `playmode-tests.log`.
+
+### WebGL build and real-browser smoke test
+
+Produce the Brotli-compressed browser build:
+
+```powershell
+& "$env:LOCALAPPDATA\Programs\Unity\Hub\Editor\6000.0.81f1\Editor\Unity.exe" `
+  -batchmode -quit -nographics -projectPath . `
+  -executeMethod Aeronauts2.Editor.Build.BuildPipeline.BuildWebGL `
+  -logFile .\Logs\webgl-build.log
+```
+
+Unity's Brotli output must be served with matching `Content-Encoding` and WebAssembly MIME headers; generic `python -m http.server` is insufficient. Start the project server in one terminal:
+
+```powershell
+& "C:\WPy64-31180\python-3.11.8.amd64\python.exe" `
+  .\tools\serve_webgl.py --directory .\Build\WebGL --port 8008
+```
+
+Browser automation follows this workstation's existing Claude Code pattern: attach Playwright to a normally launched Chrome over CDP. Ports `9222`-`9229` belong to persistent automation profiles; use a scratch port at `9230+` and an isolated profile:
+
+```powershell
+Start-Process "C:\Program Files\Google\Chrome\Application\chrome.exe" -ArgumentList @(
+  '--remote-debugging-port=9230',
+  "--user-data-dir=$PWD\Logs\browser\chrome-profile",
+  '--remote-allow-origins=*',
+  '--no-first-run',
+  '--no-default-browser-check')
+
+& "C:\WPy64-31180\python-3.11.8.amd64\python.exe" `
+  .\tools\browser_smoke.py --cdp http://127.0.0.1:9230 `
+  --url http://127.0.0.1:8008/ --output-dir .\Logs\browser
+```
+
+The smoke test waits for the real Unity canvas, checks WebGL/GPU state, obtains pointer lock, switches constrained → full-360 → constrained aim profiles, creates off-body Aim View flight, toggles Forward View and back, resets, fires both weapons, records console/page/network failures, measures 180 rendered frames, and saves four screenshots plus `report.json`. A WebGL-only telemetry bridge exposes read-only gameplay state to the test, so the gate fails unless exact aim limits, a non-zero independent aim angle, 0-degree Forward View alignment, return-to-aim behavior, reset recentering, clear head-origin state, movement, weapon counts, hits, and railgun reserve are observed. Verified on Chrome `143.0.7499.147` with AMD D3D11/ANGLE: `5.39 s` load, `59.9 FPS`, `17.3 ms` p95, six of six head-origin shots registered, and zero runtime/page/real network errors. Unity logs two visually harmless unsupported optional shaders (`Hidden/CoreSRP/CoreCopy` and `Hidden/Universal/HDRDebugView`) plus six Chromium `getInternalformatParameter` warnings; the rendered scene contains no missing/magenta materials.
 
 Generated folders such as `Library`, `Temp`, `Logs`, `Build`, and `UserSettings` are intentionally ignored. Large source art, 3D files, audio, and video are tracked through Git LFS.
 
