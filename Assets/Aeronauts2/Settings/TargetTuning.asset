@@ -12,6 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 756c9eb218e147739987389139d9fb59, type: 3}
   m_Name: TargetTuning
   m_EditorClassIdentifier: 
-  maximumShield: 60
+  maximumShield: 300
   maximumHull: 100
-  respawnDelay: 2
+  respawnDelay: 3

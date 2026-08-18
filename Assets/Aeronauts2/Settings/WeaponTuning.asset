@@ -16,9 +16,13 @@ MonoBehaviour:
   primaryProjectileRadius: 0.16
   primaryProjectileLifetime: 3
   primaryShotsPerSecond: 8
-  primaryDamage: 16
+  primaryShieldDamage: 16
+  primaryBodyHullDamage: 16
+  primaryCriticalHullDamage: 100
   railgunRange: 500
   railgunCooldown: 0.85
   railgunCapacity: 3
-  railgunDamage: 80
-  criticalDamageMultiplier: 2.5
+  railgunShieldDamage: 80
+  railgunBodyHullDamage: 80
+  railgunCriticalHullDamage: 100
+  railgunCriticalBypassesShield: 1

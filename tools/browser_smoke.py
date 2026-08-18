@@ -315,12 +315,41 @@ def main() -> int:
             behavior_failures.append("Secondary mouse input did not produce one railgun shot.")
         if int(combat_telemetry.get("hits", 0)) < 1:
             behavior_failures.append("Scripted centered weapon fire registered no hits.")
+        remaining_shield = float(combat_telemetry.get("lastTargetShield", 300))
+        if remaining_shield <= 0 or remaining_shield >= 300:
+            behavior_failures.append("Scripted combat did not damage and retain the high-capacity shield.")
+        if float(combat_telemetry.get("lastTargetHull", 0)) != 100:
+            behavior_failures.append("Shielded body damage incorrectly leaked into target hull.")
         if int(combat_telemetry.get("railgunAmmo", -1)) != 2:
             behavior_failures.append("Railgun reserve did not decrease from three to two.")
         if bool(combat_telemetry.get("muzzleBlocked", True)):
             behavior_failures.append("Clear centered combat incorrectly reported the head origin as blocked.")
         if bool(combat_telemetry.get("lastShotWasBlocked", True)):
             behavior_failures.append("Clear railgun shot was incorrectly classified as head-origin blocked.")
+        if float(combat_telemetry.get("botSpeed", 0)) <= 1:
+            behavior_failures.append("Duel bot did not advance through the shared flight simulation.")
+        if float(combat_telemetry.get("botAlignmentError", 180)) >= 0.1:
+            behavior_failures.append("Duel bot velocity diverged from its body-forward direction.")
+        if int(combat_telemetry.get("botShots", 0)) < 1:
+            behavior_failures.append("Duel bot did not fire a primary projectile.")
+        required_duel_fields = (
+            "playerShield",
+            "playerHull",
+            "playerEliminated",
+            "botShield",
+            "botHull",
+            "botEliminated",
+            "playerScore",
+            "botScore",
+            "matchComplete",
+        )
+        missing_duel_fields = [
+            field for field in required_duel_fields if field not in combat_telemetry
+        ]
+        if missing_duel_fields:
+            behavior_failures.append(
+                "Duel telemetry is missing: " + ", ".join(missing_duel_fields)
+            )
         report = {
             "url": page.url,
             "title": page.title(),

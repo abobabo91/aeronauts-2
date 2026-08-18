@@ -4,23 +4,23 @@ namespace Aeronauts2.Combat
 {
     public sealed class TargetHitRegion : MonoBehaviour
     {
-        [SerializeField] private TargetDummy target;
+        [SerializeField] private CombatantHealth target;
         [SerializeField] private HitRegionType regionType;
 
-        public TargetDummy Target => target;
+        public CombatantHealth Target => target;
         public HitRegionType RegionType => regionType;
 
-        public void Configure(TargetDummy targetDummy, HitRegionType type)
+        public void Configure(CombatantHealth combatant, HitRegionType type)
         {
-            target = targetDummy;
+            target = combatant;
             regionType = type;
         }
 
-        public DamageReport ApplyDamage(float damage, float criticalMultiplier)
+        public DamageReport ApplyDamage(in WeaponDamageProfile damageProfile)
         {
             return target == null
                 ? default
-                : target.ApplyDamage(damage, regionType, criticalMultiplier);
+                : target.ApplyDamage(damageProfile, regionType);
         }
     }
 }

@@ -17,6 +17,7 @@ namespace Aeronauts2.Flight
         public FlightState State => state;
         public FlightTuning Tuning => tuning;
         public event Action FlightReset;
+        public event Action ManualResetRequested;
 
         public float VelocityAlignmentErrorDegrees
         {
@@ -53,7 +54,7 @@ namespace Aeronauts2.Flight
 
             if (input.ConsumeResetPressed())
             {
-                ResetFlight();
+                RequestManualReset();
             }
 
             MovementIntent intent = input.ReadMovementIntent();
@@ -68,6 +69,12 @@ namespace Aeronauts2.Flight
             state = FlightState.Create(spawnPosition, spawnRotation, capacity);
             transform.SetPositionAndRotation(spawnPosition, spawnRotation);
             FlightReset?.Invoke();
+        }
+
+        public void RequestManualReset()
+        {
+            ResetFlight();
+            ManualResetRequested?.Invoke();
         }
     }
 }

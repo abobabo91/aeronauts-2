@@ -23,6 +23,7 @@ namespace Aeronauts2.Editor
         private const string AimTuningPath = "Assets/Aeronauts2/Settings/AimTuning.asset";
         private const string WeaponTuningPath = "Assets/Aeronauts2/Settings/WeaponTuning.asset";
         private const string TargetTuningPath = "Assets/Aeronauts2/Settings/TargetTuning.asset";
+        private const string BotTuningPath = "Assets/Aeronauts2/Settings/BotTuning.asset";
         private const string MaterialRoot = "Assets/Aeronauts2/Art/Materials";
 
         [MenuItem("Aeronauts 2/Rebuild Flight Lab")]
@@ -39,6 +40,7 @@ namespace Aeronauts2.Editor
             InputTuning inputTuning = LoadOrCreateAsset<InputTuning>(InputTuningPath);
             WeaponTuning weaponTuning = LoadOrCreateAsset<WeaponTuning>(WeaponTuningPath);
             TargetTuning targetTuning = LoadOrCreateAsset<TargetTuning>(TargetTuningPath);
+            BotTuning botTuning = LoadOrCreateAsset<BotTuning>(BotTuningPath);
             Material darkMaterial = CreateOrUpdateMaterial(
                 $"{MaterialRoot}/FlightLab_Dark.mat",
                 new Color(0.035f, 0.055f, 0.08f),
@@ -64,13 +66,23 @@ namespace Aeronauts2.Editor
             scene.name = "FlightLab";
 
             ConfigureEnvironment(darkMaterial, gridMaterial, cyanMaterial, orangeMaterial);
-            CreateCombatTargets(targetTuning, playerMaterial, orangeMaterial, cyanMaterial);
+            TargetDummy[] combatTargets = CreateCombatTargets(
+                targetTuning,
+                playerMaterial,
+                orangeMaterial,
+                cyanMaterial);
 
             GameObject systems = new("Systems");
             PlayerInputReader input = systems.AddComponent<PlayerInputReader>();
             input.Configure(inputActions, inputTuning);
 
-            FlightMotor motor = CreatePlayer(input, flightTuning, playerMaterial, cyanMaterial);
+            FlightMotor motor = CreatePlayer(
+                input,
+                flightTuning,
+                targetTuning,
+                playerMaterial,
+                cyanMaterial,
+                out CombatantHealth playerHealth);
             AimCameraController aimCamera = CreateCamera(motor, input, aimTuning);
             PlayerWeaponController weapon = motor.gameObject.AddComponent<PlayerWeaponController>();
             Transform combatOrigin = motor.transform.Find("SharedGameplayFrame/HeadCockpitCombatOrigin");
@@ -81,9 +93,54 @@ namespace Aeronauts2.Editor
                 weaponTuning,
                 cyanMaterial,
                 orangeMaterial);
+            PlayerCombatantController playerLifecycle = motor.gameObject
+                .AddComponent<PlayerCombatantController>();
+            playerLifecycle.Configure(playerHealth, motor, weapon);
+
+            BotFlightController botFlight = CreateBot(
+                motor,
+                playerHealth,
+                flightTuning,
+                weaponTuning,
+                targetTuning,
+                botTuning,
+                orangeMaterial,
+                cyanMaterial,
+                out CombatantHealth botHealth,
+                out BotWeaponController botWeapon);
+            DuelMatchController match = systems.AddComponent<DuelMatchController>();
+            match.Configure(motor, weapon, botWeapon, playerHealth, botHealth, 5);
+            CombatDrillController combatDrill = systems.AddComponent<CombatDrillController>();
+            combatDrill.Configure(
+                motor,
+                weapon,
+                new CombatantHealth[]
+                {
+                    playerHealth,
+                    botHealth,
+                    combatTargets[0],
+                    combatTargets[1],
+                    combatTargets[2],
+                });
             BrowserTelemetryReporter browserTelemetry = systems.AddComponent<BrowserTelemetryReporter>();
-            browserTelemetry.Configure(motor, aimCamera, weapon);
-            CreateHud(motor, aimCamera, weapon);
+            browserTelemetry.Configure(
+                motor,
+                aimCamera,
+                weapon,
+                playerHealth,
+                botHealth,
+                botFlight,
+                botWeapon,
+                match);
+            CreateHud(
+                motor,
+                aimCamera,
+                weapon,
+                playerHealth,
+                botHealth,
+                botFlight,
+                botWeapon,
+                match);
 
             AssetDatabase.SaveAssets();
             EditorSceneManager.MarkSceneDirty(scene);
@@ -103,56 +160,126 @@ namespace Aeronauts2.Editor
         private static FlightMotor CreatePlayer(
             PlayerInputReader input,
             FlightTuning tuning,
+            TargetTuning healthTuning,
             Material bodyMaterial,
-            Material accentMaterial)
+            Material accentMaterial,
+            out CombatantHealth health)
         {
             GameObject player = new("PlayerFlightFrame");
             player.transform.SetPositionAndRotation(new Vector3(0f, 22f, -65f), Quaternion.identity);
             FlightMotor motor = player.AddComponent<FlightMotor>();
             motor.Configure(input, tuning);
+            health = player.AddComponent<CombatantHealth>();
+            health.Configure(healthTuning);
+            CreateSharedCombatantFrame(player.transform, health, bodyMaterial, accentMaterial);
+            return motor;
+        }
 
+        private static BotFlightController CreateBot(
+            FlightMotor playerMotor,
+            CombatantHealth playerHealth,
+            FlightTuning flightTuning,
+            WeaponTuning weaponTuning,
+            TargetTuning healthTuning,
+            BotTuning botTuning,
+            Material bodyMaterial,
+            Material accentMaterial,
+            out CombatantHealth botHealth,
+            out BotWeaponController botWeapon)
+        {
+            GameObject bot = new("DuelBotFlightFrame");
+            Vector3 spawnPosition = new(55f, 30f, 35f);
+            Quaternion spawnRotation = Quaternion.LookRotation(
+                (playerMotor.transform.position - spawnPosition).normalized,
+                Vector3.up);
+            bot.transform.SetPositionAndRotation(spawnPosition, spawnRotation);
+            botHealth = bot.AddComponent<CombatantHealth>();
+            botHealth.Configure(healthTuning);
+            Transform model = CreateSharedCombatantFrame(
+                bot.transform,
+                botHealth,
+                bodyMaterial,
+                accentMaterial);
+
+            BotFlightController botFlight = bot.AddComponent<BotFlightController>();
+            botFlight.Configure(
+                flightTuning,
+                botTuning,
+                botHealth,
+                playerMotor.transform,
+                playerHealth,
+                new Vector3(0f, 28f, 55f));
+            botWeapon = bot.AddComponent<BotWeaponController>();
+            botWeapon.Configure(
+                botHealth,
+                playerHealth,
+                playerMotor.transform.Find("SharedGameplayFrame/CockpitMarker"),
+                playerMotor,
+                model.Find("HeadCockpitCombatOrigin"),
+                weaponTuning,
+                botTuning,
+                accentMaterial);
+            return botFlight;
+        }
+
+        private static Transform CreateSharedCombatantFrame(
+            Transform parent,
+            CombatantHealth health,
+            Material bodyMaterial,
+            Material accentMaterial)
+        {
             GameObject model = new("SharedGameplayFrame");
-            model.transform.SetParent(player.transform, false);
-            CreatePrimitive(
+            model.transform.SetParent(parent, false);
+            CreateCombatantPrimitive(
                 PrimitiveType.Capsule,
                 "CentralBody",
                 model.transform,
                 Vector3.zero,
                 new Vector3(0.75f, 1.5f, 0.75f),
                 Quaternion.Euler(90f, 0f, 0f),
-                bodyMaterial);
-            CreatePrimitive(
+                bodyMaterial,
+                health,
+                HitRegionType.Body);
+            CreateCombatantPrimitive(
                 PrimitiveType.Cube,
                 "LeftWing",
                 model.transform,
                 new Vector3(-2.45f, 0f, 0.15f),
                 new Vector3(4.2f, 0.12f, 1.15f),
                 Quaternion.Euler(0f, -5f, -4f),
-                bodyMaterial);
-            CreatePrimitive(
+                bodyMaterial,
+                health,
+                HitRegionType.Body);
+            CreateCombatantPrimitive(
                 PrimitiveType.Cube,
                 "RightWing",
                 model.transform,
                 new Vector3(2.45f, 0f, 0.15f),
                 new Vector3(4.2f, 0.12f, 1.15f),
                 Quaternion.Euler(0f, 5f, 4f),
-                bodyMaterial);
-            CreatePrimitive(
+                bodyMaterial,
+                health,
+                HitRegionType.Body);
+            CreateCombatantPrimitive(
                 PrimitiveType.Cube,
                 "TailFin",
                 model.transform,
                 new Vector3(0f, 0.75f, -1.2f),
                 new Vector3(0.14f, 1.4f, 1.1f),
                 Quaternion.identity,
-                accentMaterial);
-            CreatePrimitive(
+                accentMaterial,
+                health,
+                HitRegionType.Body);
+            CreateCombatantPrimitive(
                 PrimitiveType.Sphere,
                 "CockpitMarker",
                 model.transform,
                 new Vector3(0f, 0.25f, 1.15f),
                 new Vector3(0.65f, 0.45f, 0.75f),
                 Quaternion.identity,
-                accentMaterial);
+                accentMaterial,
+                health,
+                HitRegionType.Critical);
 
             GameObject combatOrigin = new("HeadCockpitCombatOrigin");
             combatOrigin.transform.SetParent(model.transform, false);
@@ -160,7 +287,7 @@ namespace Aeronauts2.Editor
 
             AddTrail(model.transform, "LeftTrail", new Vector3(-4.3f, 0f, -0.4f), accentMaterial);
             AddTrail(model.transform, "RightTrail", new Vector3(4.3f, 0f, -0.4f), accentMaterial);
-            return motor;
+            return model.transform;
         }
 
         private static AimCameraController CreateCamera(
@@ -249,14 +376,14 @@ namespace Aeronauts2.Editor
             CreateGate(environment.transform, new Vector3(0f, 25f, 215f), Quaternion.Euler(-10f, 0f, -25f), 14f, cyanMaterial);
         }
 
-        private static void CreateCombatTargets(
+        private static TargetDummy[] CreateCombatTargets(
             TargetTuning tuning,
             Material bodyMaterial,
             Material shieldMaterial,
             Material criticalMaterial)
         {
             GameObject root = new("CombatTargets");
-            CreateTarget(
+            TargetDummy stationaryTarget = CreateTarget(
                 "StationaryTarget",
                 root.transform,
                 new Vector3(0f, 23.6f, 35f),
@@ -292,6 +419,13 @@ namespace Aeronauts2.Editor
                 new Vector3(36f, 15f, 165f),
                 new Vector3(36f, 58f, 165f),
                 9f);
+
+            return new[]
+            {
+                stationaryTarget,
+                strafingTarget,
+                verticalTarget,
+            };
         }
 
         private static TargetDummy CreateTarget(
@@ -309,7 +443,7 @@ namespace Aeronauts2.Editor
             TargetDummy target = root.AddComponent<TargetDummy>();
             target.Configure(tuning);
 
-            CreateTargetPrimitive(
+            CreateCombatantPrimitive(
                 PrimitiveType.Cube,
                 "BodyRegion",
                 root.transform,
@@ -319,7 +453,7 @@ namespace Aeronauts2.Editor
                 bodyMaterial,
                 target,
                 HitRegionType.Body);
-            CreateTargetPrimitive(
+            CreateCombatantPrimitive(
                 PrimitiveType.Cube,
                 "LeftWingRegion",
                 root.transform,
@@ -329,7 +463,7 @@ namespace Aeronauts2.Editor
                 shieldMaterial,
                 target,
                 HitRegionType.Body);
-            CreateTargetPrimitive(
+            CreateCombatantPrimitive(
                 PrimitiveType.Cube,
                 "RightWingRegion",
                 root.transform,
@@ -339,7 +473,7 @@ namespace Aeronauts2.Editor
                 shieldMaterial,
                 target,
                 HitRegionType.Body);
-            CreateTargetPrimitive(
+            CreateCombatantPrimitive(
                 PrimitiveType.Sphere,
                 "CockpitCriticalRegion",
                 root.transform,
@@ -355,7 +489,12 @@ namespace Aeronauts2.Editor
         private static void CreateHud(
             FlightMotor motor,
             AimCameraController aimCamera,
-            PlayerWeaponController weapon)
+            PlayerWeaponController weapon,
+            CombatantHealth playerHealth,
+            CombatantHealth botHealth,
+            BotFlightController botFlight,
+            BotWeaponController botWeapon,
+            DuelMatchController match)
         {
             GameObject canvasObject = new("FlightLabHUD");
             Canvas canvas = canvasObject.AddComponent<Canvas>();
@@ -387,7 +526,7 @@ namespace Aeronauts2.Editor
                 25,
                 TextAnchor.UpperRight,
                 new Vector2(-24f, -24f),
-                new Vector2(560f, 220f),
+                new Vector2(720f, 430f),
                 new Vector2(1f, 1f),
                 new Vector2(1f, 1f));
             combatStatus.color = new Color(1f, 0.78f, 0.42f);
@@ -436,7 +575,16 @@ namespace Aeronauts2.Editor
             FlightDebugHud hud = canvasObject.AddComponent<FlightDebugHud>();
             hud.Configure(motor, aimCamera, status);
             CombatDebugHud combatHud = canvasObject.AddComponent<CombatDebugHud>();
-            combatHud.Configure(weapon, combatStatus, hitMarker, blockedMarker);
+            combatHud.Configure(
+                weapon,
+                playerHealth,
+                botHealth,
+                botFlight,
+                botWeapon,
+                match,
+                combatStatus,
+                hitMarker,
+                blockedMarker);
         }
 
         private static Text CreateText(
@@ -557,7 +705,7 @@ namespace Aeronauts2.Editor
             return primitive;
         }
 
-        private static GameObject CreateTargetPrimitive(
+        private static GameObject CreateCombatantPrimitive(
             PrimitiveType type,
             string name,
             Transform parent,
@@ -565,7 +713,7 @@ namespace Aeronauts2.Editor
             Vector3 scale,
             Quaternion rotation,
             Material material,
-            TargetDummy target,
+            CombatantHealth target,
             HitRegionType regionType)
         {
             GameObject primitive = GameObject.CreatePrimitive(type);

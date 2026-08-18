@@ -1,156 +1,155 @@
 # Aeronauts 2
 
-Foundation for a high-skill competitive aerial arena shooter. The current playable is an offline greybox Flight Lab with fixed-tick flight, keyboard/controller input, independent configurable aim, a centered reticle, bank-to-turn movement, momentum management, timed airbrake exits, finite-speed primary projectiles, an instant railgun, precision target regions, and live movement/combat diagnostics.
+![Aeronauts 2 concept banner](docs/media/aeronauts-2-banner.png)
 
-`Aeronauts 2` is an internal working title. Before any public release, confirm naming rights and replace all references if necessary. Do not reuse assets, characters, audio, branding, or code from the 1999 PlayStation game *Aironauts*.
+> Original concept art for the project. The current playable uses deliberately simple greybox visuals.
 
-## Current stack
+[![Unity](https://img.shields.io/badge/Unity-6000.0.81f1-222c37?logo=unity)](https://unity.com/releases/editor/whats-new/6000.0.81f1)
+[![License: MIT](https://img.shields.io/badge/License-MIT-35b7a8.svg)](LICENSE)
+[![Status: Prototype](https://img.shields.io/badge/Status-Playable%20Prototype-f28c28.svg)](#project-status)
 
-- Unity `6000.0.81f1` (Unity 6.0 LTS)
-- Universal Render Pipeline `17.0.4` (builtin, with SRP Core `17.0.4`)
-- Unity Input System `1.20.0`
-- Unity Test Framework `1.6.0`
-- Web Build Support and Windows IL2CPP Build Support — both verified directly under the editor's `PlaybackEngines` folder
-- Blender `5.2.0 LTS`
-- Git LFS `3.5.1`
-- Visual Studio Code `1.133.0` with Microsoft C#, C# Dev Kit, and Unity extensions
+**Aeronauts 2** is an experimental competitive aerial arena shooter built around expressive movement and precision combat. The goal is the mechanical depth of a vehicle-sports game combined with the readable aim, positioning, and clutch moments of a competitive shooter.
 
-The browser demo and later Windows/Steam build are intended to share one Unity project. Multiplayer packages are deliberately not installed yet; movement and aiming must be proven in an offline flight lab before the networking model is locked.
+The current browser-first prototype is an offline first-to-five duel against a flight bot. Player and bot use the same fixed-tick flight, projectile, shield, hull, hit-region, elimination, and respawn rules.
 
-A native Windows build additionally requires Visual Studio 2019 or later with C++ Tools and Windows SDK `10.0.19041.0` or newer. That administrator-level prerequisite is deferred until native/Steam builds begin; it is not needed for the browser-first prototype.
+## Highlights
 
-### Do not move this project to Unity 6.3 LTS
+- Fixed 60 Hz flight simulation with body and velocity alignment by construction
+- Full stop and rotate-in-place control, with movement resuming along body forward
+- Independent mouse/right-stick aim with a centered reticle
+- Toggleable Aim View and body-aligned Forward View
+- Manual roll, double-tap automatic 360° rolls, airbrake hook turns, boost, and timed slingshot exits
+- Zero-spread finite-speed primary projectiles that reward leading targets
+- Instant three-shot railgun with lethal cockpit precision
+- Non-regenerating shields, body/cockpit damage regions, and three-second respawns
+- First-to-five duel against a bot driven through the shared flight simulation
+- Keyboard/mouse and gamepad support from the same device-neutral input layer
+- WebGL and Windows targets in one Unity project
 
-Unity `6000.3.22f1` cannot compile a URP project at all, including the URP template Unity itself ships inside that editor:
+## Project status
 
-```
-ReadonlyMaterialConverter.cs(159,18): error CS0246:
-The type or namespace name 'MaterialReferenceChanger' could not be found
-```
+This is an early gameplay prototype, not a finished game. It currently includes:
 
-`MaterialReferenceChanger` is referenced twice in `com.unity.render-pipelines.universal` `17.3.0` (`Editor/Tools/Converters/ReadonlyMaterialConverter/`, plus its test) and is defined nowhere — not in URP, not in SRP Core `17.3.0`, not in the editor's managed assemblies. The shipped packages are byte-intact (each `BuiltInPackages/<pkg>.sha1` matches its `Library/PackageCache/<pkg>@<hash>` folder), so this is not a broken install, and `6000.3.22f1` is the newest 6.3 LTS available. Every other type in that file resolves, so it is a single dangling reference in a Built-in→URP migration tool.
+- a generated greybox Flight Lab arena;
+- a playable player-versus-bot duel;
+- three stationary/moving combat drill targets;
+- live flight, combat, health, bot, and match diagnostics;
+- 30 EditMode and 7 PlayMode tests;
+- an automated real-Chrome WebGL smoke test.
 
-Patching it locally would mean deleting `ReadonlyMaterialConverter` *and* dropping the `typeof(ReadonlyMaterialConverter)` registration at `Editor/Converter/Converters.cs:115` inside the Unity install — machine-local, lost on reinstall, and invisible to a fresh clone. The project targets 6.0 LTS instead. Re-test 6.3 only when a patch newer than `6000.3.22f1` ships.
+The latest local WebGL verification ran at 59.9 FPS with no gameplay, page, network, or runtime errors. Multiplayer, final art, audio, matchmaking, progression, and Steam integration are intentionally deferred until the flight and combat loop feels right.
 
-Input System `1.12.0` — the version Unity's own 6.3 template pins — is separately broken on modern editors: it references `BuildTarget.ReservedCFE`, which no longer exists (`error CS0117`). Fixed at or before `1.14.2`; this project uses `1.20.0`, the first release declaring `unity: 6000.0` as its floor.
+## Controls
 
-## First open
+| Action | Keyboard and mouse | Gamepad |
+| --- | --- | --- |
+| Aim | Mouse | Right stick |
+| Pitch / yaw | `W` `S` / `A` `D` | Left stick |
+| Manual roll | Hold `Q` / `E` | Hold bumpers |
+| Automatic 360° roll | Double-tap `Q` / `E` | Double-tap a bumper |
+| Accelerate | `Space` | South face button |
+| Airbrake | `Left Ctrl` | West face button |
+| Boost | `Left Shift` | East face button |
+| Primary projectile | Left mouse | Right trigger |
+| Railgun | Right mouse | Left trigger |
+| Toggle Aim / Forward View | `C` | Right-stick press |
+| Compare constrained / full-360 aim | `V` | Select / Back |
+| Reset duel | `R` | — |
 
-The project imports clean on `6000.0.81f1`: batch import exits `0` with an empty Console — no compiler errors, no warnings. A headless import is the fastest way to confirm that after any package or editor change:
+See [docs/controls.md](docs/controls.md) for the complete movement, camera, weapon, and damage model.
 
-```powershell
-& "$env:LOCALAPPDATA\Programs\Unity\Hub\Editor\6000.0.81f1\Editor\Unity.exe" `
-  -batchmode -quit -nographics -projectPath . -logFile .\Logs\import.log
-```
+## Combat rules
 
-Exit code `0` means the project compiled. Exit code `1` prints `Aborting batchmode due to failure: Scripts have compiler errors.`, and the offending lines are in the log as `error CS####`.
+- Every combatant starts with `300` shield and `100` hull.
+- Shield never regenerates.
+- While shield remains, hit location does not alter damage and shield-breaking damage does not spill into hull.
+- The primary travels at `120` units/second and deals `16` damage. An unshielded cockpit hit deals lethal hull damage.
+- The railgun is instantaneous, has three shots, and deals `80` body/shield damage.
+- A railgun cockpit hit bypasses shield and eliminates immediately.
+- Weapons fire from the shared head/cockpit origin, so third-person camera peeking cannot shoot through cover.
 
-To open the editor normally, use `unity open --project <this folder>`, or add the folder in the Hub and open it with `6000.0.81f1`.
+These are playtest values stored in Unity data assets, not final balance decisions.
 
-Licensing is per-machine, not per-project. A fresh workstation needs:
+## Getting started
 
-```powershell
-& "$env:LOCALAPPDATA\Unity\bin\unity.exe" auth login                          # opens a browser; complete it within ~2 min or it exits "Sign-in timed out"
-& "$env:LOCALAPPDATA\Unity\bin\unity.exe" license activate --personal --accept-eula
-```
+### Requirements
 
-Without a license the editor still starts, resolves packages and then exits before importing; `Unity.Licensing.Client.log` shows `Failed to update license file. [Code: 401] Token not found in cache` followed by `No ULF license found`.
+- Unity `6000.0.81f1` with Universal Render Pipeline support
+- Web Build Support only if you want to build the browser version
+- Git LFS for future large source assets
 
-Use the `unity` CLI, not the Hub's old CLI. Hub `3.20.1` no longer accepts the documented `-- --headless` form — it fails with `Cannot find module '--headless'`, and the bare `--headless` flag fails with `bad option`. The `unity` CLI (`1.0.0-beta.5`) covers `auth`, `license`, `install`, `open`, `run`, `build` and `test`.
-
-Two `unity` CLI behaviours worth knowing, both observed here: `install --dry-run` prints nothing at all, and `unity editors` reported `modules=Web, Windows` for an editor whose Web module had actually failed to install. Confirm modules against `Editor/Data/PlaybackEngines/` on disk rather than trusting the CLI.
-
-Installed tool locations on this workstation:
-
-- Unity CLI: `C:\Users\abele\AppData\Local\Unity\bin\unity.exe` (`1.0.0-beta.5`)
-- Unity Editor: `C:\Users\abele\AppData\Local\Programs\Unity\Hub\Editor\6000.0.81f1\Editor\Unity.exe`
-- Unity Hub: `C:\Program Files\Unity Hub\Unity Hub.exe` (`3.20.1`)
-- Blender: `C:\Users\abele\AppData\Local\Programs\Blender\5.2.0\blender.exe`
-
-`6000.3.22f1` was tested, found unusable for this project, and removed from this workstation. Do not reinstall or retarget to Unity 6.3 until a patch newer than `6000.3.22f1` has been verified against a clean URP project.
-
-### Build support verification
-
-`6000.0.81f1/Editor/Data/PlaybackEngines/` contains both `WebGLSupport` (4.05 GB) and `windowsstandalonesupport` (0.79 GB). A complete WebGL build now succeeds through `Aeronauts2.Editor.Build.BuildPipeline.BuildWebGL`; the first cold-cache build took 10m37s and produced a 12.3 MB local output including a 7.6 MB Brotli-compressed `.wasm.br`. Build output stays ignored under `Build/WebGL`.
-
-Do not trust `unity editors` or `install-modules --list` for module verification. Both have reported modules as installed when their playback-engine folders were absent.
-
-Blender portable archive SHA-256: `2D184B626C001692C362291911293B6A297179D618D95E9E9192C3A80318ADC4`.
-
-## Repository layout
-
-- `Assets/Aeronauts2/`: all first-party game content
-- `Assets/ThirdParty/`: imported third-party assets, each with its license
-- `Packages/`: pinned Unity packages
-- `ProjectSettings/`: shared Unity configuration
-- `docs/`: durable gameplay and technical decisions
-
-## Flight Lab development
-
-Open `Assets/Aeronauts2/Scenes/FlightLab/FlightLab.unity` and iterate in Editor Play Mode. The current controls and tuning are documented in `docs/controls.md`; the editable `FlightTuning`, `AimTuning`, `InputTuning`, `WeaponTuning`, and `TargetTuning` assets are under `Assets/Aeronauts2/Settings/`.
-
-The current movement skill loop is roll to choose a turning plane, pitch through the turn, use airbrake when a tighter hook is worth the speed loss, then tap boost shortly after release for an earned slingshot burst. Airbrake overrides acceleration and boost while held. There is no scripted 180-degree action: a reversal is performed through the same airbrake-and-steering physics. Hold Q/E (controller bumpers) for manual roll or double-tap one side for a committed 360-degree roll.
-
-Combat deliberately separates two aim skills. Left mouse/right trigger fires exact, zero-gravity primary bolts at `120` world units/second, so moving targets require lead. Right mouse/left trigger fires an instantaneous hitscan railgun with a three-shot reserve. The centered camera ray selects the intended point, but both authoritative shots originate at the center of the shared head/cockpit region. Player-owned colliders are ignored by the shot query; cover between that origin and the point absorbs the shot even when the third-person camera can see around it, and the HUD warns `HEAD ORIGIN BLOCKED`. Body and small cockpit regions report separate hits; shield, hull, damage, cooldown, and reserve values are placeholders in data assets for later playtesting.
-
-Aim View and Forward View are gameplay camera states. Aim View orbits the camera around the aircraft with independent weapon aim, allowing side/front views of the shared frame while the centered crosshair remains the firing direction. Forward View freezes independent aim and aligns camera, crosshair, and weapons with body forward. Press `C` or the controller right stick to toggle; returning to Aim View begins from the current forward direction rather than snapping to a stale angle.
-
-Aim limits are body-relative and live in `AimTuning.asset`. The default constrained profile permits `110` degrees to either side and `78` degrees up/down; the full-360 profile permits `180` degrees to either side and `89` degrees up/down. The FlightLab-only comparison switch is `V` or controller Select. Turning the body does not drag an in-bounds Aim View camera, while crossing a configured edge clamps it; resetting flight recenters aim on the body.
-
-Rebuild the generated greybox scene after changing its editor utility:
+Clone the repository and open it with the exact editor version:
 
 ```powershell
-& "$env:LOCALAPPDATA\Programs\Unity\Hub\Editor\6000.0.81f1\Editor\Unity.exe" `
-  -batchmode -quit -nographics -projectPath . `
-  -executeMethod Aeronauts2.Editor.FlightLabSceneBuilder.Build `
-  -logFile .\Logs\flightlab-build.log
+git clone https://github.com/abobabo91/aeronauts-2.git
+cd aeronauts-2
 ```
 
-Run the fixed-tick movement, input-gesture, weapon-state, damage-region, and structure tests:
+Open `Assets/Aeronauts2/Scenes/FlightLab/FlightLab.unity` and press Play.
+
+The project intentionally remains on Unity 6.0 LTS because a tested Unity 6.3 editor/URP combination failed before project code compiled. See [docs/development.md](docs/development.md) before changing editor or package versions.
+
+## Tests
+
+From PowerShell on Windows:
 
 ```powershell
-& "$env:LOCALAPPDATA\Programs\Unity\Hub\Editor\6000.0.81f1\Editor\Unity.exe" `
-  -batchmode -nographics -projectPath . -runTests -testPlatform EditMode `
-  -testResults .\Logs\editmode-results.xml -logFile .\Logs\editmode-tests.log
+$unity = "$env:LOCALAPPDATA\Programs\Unity\Hub\Editor\6000.0.81f1\Editor\Unity.exe"
+
+& $unity -batchmode -nographics -projectPath . `
+  -runTests -testPlatform EditMode `
+  -testResults .\Logs\editmode-results.xml `
+  -logFile .\Logs\editmode-tests.log
+
+& $unity -batchmode -nographics -projectPath . `
+  -runTests -testPlatform PlayMode `
+  -testResults .\Logs\playmode-results.xml `
+  -logFile .\Logs\playmode-tests.log
 ```
 
-Run the scene startup smoke test by changing `EditMode` to `PlayMode` and the two output filenames to `playmode-results.xml` and `playmode-tests.log`.
+The tests cover fixed-tick movement, airbrake/boost timing, roll gestures, aim constraints, weapon cadence, damage gating, critical hits, head-origin obstruction, bot flight/fire, first-to-five scoring, scene structure, and device bindings.
 
-### WebGL build and real-browser smoke test
-
-Produce the Brotli-compressed browser build:
+## WebGL build
 
 ```powershell
-& "$env:LOCALAPPDATA\Programs\Unity\Hub\Editor\6000.0.81f1\Editor\Unity.exe" `
-  -batchmode -quit -nographics -projectPath . `
+$unity = "$env:LOCALAPPDATA\Programs\Unity\Hub\Editor\6000.0.81f1\Editor\Unity.exe"
+
+& $unity -batchmode -quit -nographics -projectPath . `
   -executeMethod Aeronauts2.Editor.Build.BuildPipeline.BuildWebGL `
   -logFile .\Logs\webgl-build.log
+
+python .\tools\serve_webgl.py --directory .\Build\WebGL --port 8008
 ```
 
-Unity's Brotli output must be served with matching `Content-Encoding` and WebAssembly MIME headers; generic `python -m http.server` is insufficient. Start the project server in one terminal:
+The custom server supplies the Brotli and WebAssembly headers Unity requires. Build output is written to ignored `Build/WebGL`.
 
-```powershell
-& "C:\WPy64-31180\python-3.11.8.amd64\python.exe" `
-  .\tools\serve_webgl.py --directory .\Build\WebGL --port 8008
-```
+## Architecture
 
-Browser automation follows this workstation's existing Claude Code pattern: attach Playwright to a normally launched Chrome over CDP. Ports `9222`-`9229` belong to persistent automation profiles; use a scratch port at `9230+` and an isolated profile:
+Core gameplay is separated from presentation so the same rules can later support WebGL, native builds, bots, replays, and server authority:
 
-```powershell
-Start-Process "C:\Program Files\Google\Chrome\Application\chrome.exe" -ArgumentList @(
-  '--remote-debugging-port=9230',
-  "--user-data-dir=$PWD\Logs\browser\chrome-profile",
-  '--remote-allow-origins=*',
-  '--no-first-run',
-  '--no-default-browser-check')
+1. device input becomes movement, aim, maneuver, and fire intent;
+2. fixed-tick simulation owns flight, weapon, and damage state;
+3. camera and presentation read state without owning movement;
+4. UI reads public state and sends commands;
+5. a future networking layer will serialize intent/state at those boundaries.
 
-& "C:\WPy64-31180\python-3.11.8.amd64\python.exe" `
-  .\tools\browser_smoke.py --cdp http://127.0.0.1:9230 `
-  --url http://127.0.0.1:8008/ --output-dir .\Logs\browser
-```
+Read the detailed [architecture](docs/architecture.md), [demo scope](docs/demo-scope.md), and [development guide](docs/development.md).
 
-The smoke test waits for the real Unity canvas, checks WebGL/GPU state, obtains pointer lock, switches constrained → full-360 → constrained aim profiles, creates off-body Aim View flight, toggles Forward View and back, resets, fires both weapons, records console/page/network failures, measures 180 rendered frames, and saves four screenshots plus `report.json`. A WebGL-only telemetry bridge exposes read-only gameplay state to the test, so the gate fails unless exact aim limits, a non-zero independent aim angle, 0-degree Forward View alignment, return-to-aim behavior, reset recentering, clear head-origin state, movement, weapon counts, hits, and railgun reserve are observed. Verified on Chrome `143.0.7499.147` with AMD D3D11/ANGLE: `5.39 s` load, `59.9 FPS`, `17.3 ms` p95, six of six head-origin shots registered, and zero runtime/page/real network errors. Unity logs two visually harmless unsupported optional shaders (`Hidden/CoreSRP/CoreCopy` and `Hidden/Universal/HDRDebugView`) plus six Chromium `getInternalformatParameter` warnings; the rendered scene contains no missing/magenta materials.
+## Roadmap
 
-Generated folders such as `Library`, `Temp`, `Logs`, `Build`, and `UserSettings` are intentionally ignored. Large source art, 3D files, audio, and video are tracked through Git LFS.
+- Tune flight, aiming, bot pressure, time-to-kill, and railgun economy through playtests
+- Add stronger duel flow, arena boundaries, spawn presentation, and combat readability
+- Replace greybox silhouettes with original pilot-rig and compact-aircraft presentations sharing one gameplay frame
+- Validate mouse/controller competitive balance
+- Add browser-compatible authoritative multiplayer only after the offline vertical slice is stable
+- Build toward a native Windows/Steam release from the same Unity project
 
-See [architecture](docs/architecture.md), [controls](docs/controls.md), and [demo scope](docs/demo-scope.md).
+## Contributing
+
+The design is still moving quickly. Bug reports and focused gameplay feedback are welcome through GitHub Issues. Please discuss large features before implementing them so they do not lock in networking, art, or balance assumptions prematurely.
+
+## License
+
+The project source is available under the [MIT License](LICENSE).
+
+`Aeronauts 2` is a working title for an original project. It is not affiliated with the 1999 PlayStation game *Aironauts*. No assets, characters, branding, audio, code, or other content from that game are included or permitted here.

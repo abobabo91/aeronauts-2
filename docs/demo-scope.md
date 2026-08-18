@@ -4,7 +4,7 @@
 
 The first milestone proves feel, not content volume or networking.
 
-Current implementation status: the Flight Lab scene, greybox gates/altitude references, shared placeholder frame, fixed-tick skill movement, independent Aim View, body-aligned Forward View, live constrained/full-360 profiles, head/cockpit-origin weapons with cover obstruction, finite-speed primary projectiles, instant limited railgun, stationary/horizontal/vertical targets, body/cockpit hit regions, placeholder shield/hull/respawn, hit/blocked markers, accuracy/combat diagnostics, reset, explicit WebGL build pipeline, Brotli-aware local server, and automated real-Chrome smoke test are implemented. Twenty-five EditMode checks cover movement, aim constraints, automated flight, weapon state, damage regions, gestures, structure, and bindings; four PlayMode checks validate the real scene, both camera states, head-origin obstruction, and instantaneous railgun versus primary travel time. The Chrome gate additionally verifies both aim profiles, off-body Aim View, body-aligned Forward View, return-to-aim behavior, reset recentering, clear head-origin shooting, rendered input/combat at 60 FPS, speed, shot counts, hits, and railgun reserve through WebGL telemetry. Shield presentation, combat timing exercises, hosted distribution, and final balance remain.
+Current implementation status: the Flight Lab scene, greybox gates/altitude references, shared player/bot placeholder frame, fixed-tick skill movement, independent Aim View, body-aligned Forward View, live constrained/full-360 profiles, head/cockpit-origin weapons with cover obstruction, finite-speed primary projectiles, instant limited player railgun, stationary/horizontal/vertical drill targets, shared player/bot damage and body/cockpit regions, a fixed-tick non-regenerating shield gate and respawn, a primary-projectile bot driven through the shared flight simulation, a first-to-five duel, target flashes, shield-break/bypass/critical/elimination markers, accuracy/combat diagnostics, coordinated reset, explicit WebGL build pipeline, Brotli-aware local server, and automated real-Chrome smoke test are implemented. Thirty EditMode checks cover movement, aim constraints, automated flight, weapon state, shield gating, damage lifecycle, gestures, duel structure, and bindings; seven PlayMode checks validate the real scene, both camera states, coordinated reset, railgun shield bypass, unshielded primary cockpit elimination, head-origin obstruction, instantaneous railgun versus primary travel time, shared bot flight/projectiles, and five scored cockpit eliminations. The Chrome gate additionally verifies both aim profiles, off-body Aim View, body-aligned Forward View, return-to-aim behavior, reset recentering, clear head-origin shooting, retained high-capacity shield with no hull leakage, bot flight/body alignment and fire, rendered input/combat, speed, shot counts, hits, and railgun reserve through WebGL telemetry. Bot feel, combat timing exercises, hosted distribution, and final balance remain.
 
 - one greybox arena with open space, cover, gates, and altitude references;
 - one shared gameplay frame with two swappable visual silhouettes: wing-rig pilot and compact aircraft;
@@ -12,17 +12,18 @@ Current implementation status: the Flight Lab scene, greybox gates/altitude refe
 - independent mouse/controller aim camera with a centered reticle;
 - stationary and moving targets with center/cockpit precision hit regions;
 - one finite-speed precision primary and one instantaneous limited railgun secondary;
-- placeholder shield/hull state and target respawn;
+- provisional `300` non-regenerating shield/`100` hull gate, part-specific unshielded damage, railgun critical bypass, elimination score, and target respawn;
 - reset, timing, accuracy, and movement-course feedback;
 - WebGL and Windows development builds from the same scenes and settings.
 
-## Second playable: combat validation
+## Second playable: combat validation (current)
 
-- one-versus-one combat with placeholder rigs;
-- health/shield rules chosen from playtest evidence;
+- first-to-five one-versus-one combat with matching placeholder gameplay frames;
+- shared player/bot health, shield, respawn, fixed-tick flight, and primary-projectile rules;
 - readable hit, shield-break, elimination, and respawn feedback;
 - controller and mouse/keyboard balance tests;
-- basic bot or recorded ghost only if it improves repeatable testing.
+- tune bot flight, leading/error, pressure, and weapon cadence from repeatable playtests;
+- choose final health/shield rules from playtest evidence.
 
 ## Deferred until the movement is fun
 

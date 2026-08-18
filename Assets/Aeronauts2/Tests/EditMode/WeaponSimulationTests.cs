@@ -90,29 +90,122 @@ namespace Aeronauts2.Tests
         }
 
         [Test]
-        public void CriticalRegionMultipliesDamageBeforeShieldAndHullResolution()
+        public void ShieldedBodyAndCockpitHitsTakeEqualDamage()
         {
-            GameObject targetObject = new("DamageTestTarget");
-            TargetDummy target = targetObject.AddComponent<TargetDummy>();
-            target.Configure(targetTuning);
-            target.ResetTarget();
-
-            DamageReport bodyHit = target.ApplyDamage(
-                weaponTuning.PrimaryDamage,
+            TargetState bodyState = TargetState.Create(targetTuning);
+            TargetState criticalState = TargetState.Create(targetTuning);
+            DamageReport bodyHit = TargetSimulation.ApplyDamage(
+                ref bodyState,
+                weaponTuning.PrimaryDamageProfile,
                 HitRegionType.Body,
-                weaponTuning.CriticalDamageMultiplier);
-            target.ResetTarget();
-            DamageReport criticalHit = target.ApplyDamage(
-                weaponTuning.PrimaryDamage,
+                targetTuning);
+            DamageReport criticalHit = TargetSimulation.ApplyDamage(
+                ref criticalState,
+                weaponTuning.PrimaryDamageProfile,
                 HitRegionType.Critical,
-                weaponTuning.CriticalDamageMultiplier);
+                targetTuning);
 
             Assert.That(bodyHit.WasCritical, Is.False);
             Assert.That(criticalHit.WasCritical, Is.True);
-            Assert.That(criticalHit.DamageApplied, Is.EqualTo(
-                bodyHit.DamageApplied * weaponTuning.CriticalDamageMultiplier).Within(0.001f));
+            Assert.That(criticalHit.ShieldDamage, Is.EqualTo(bodyHit.ShieldDamage));
+            Assert.That(criticalHit.HullDamage, Is.EqualTo(0f));
+            Assert.That(criticalState.Hull, Is.EqualTo(bodyState.Hull));
+        }
 
-            Object.DestroyImmediate(targetObject);
+        [Test]
+        public void ShieldDoesNotRegenerateOverTime()
+        {
+            TargetState state = TargetState.Create(targetTuning);
+            DamageReport hit = TargetSimulation.ApplyDamage(
+                ref state,
+                weaponTuning.PrimaryDamageProfile,
+                HitRegionType.Body,
+                targetTuning);
+            float shieldAfterHit = state.Shield;
+
+            TargetSimulation.Step(ref state, targetTuning, 60f);
+
+            Assert.That(hit.ShieldDamage, Is.GreaterThan(0f));
+            Assert.That(state.Shield, Is.EqualTo(shieldAfterHit));
+        }
+
+        [Test]
+        public void ShieldBreakingShotDoesNotSpillDamageIntoHull()
+        {
+            TargetState state = TargetState.Create(targetTuning);
+            state.Shield = 1f;
+            DamageReport report = TargetSimulation.ApplyDamage(
+                ref state,
+                weaponTuning.PrimaryDamageProfile,
+                HitRegionType.Critical,
+                targetTuning);
+
+            Assert.That(report.ShieldBroken, Is.True);
+            Assert.That(report.ShieldDamage, Is.EqualTo(1f));
+            Assert.That(report.HullDamage, Is.EqualTo(0f));
+            Assert.That(state.Hull, Is.EqualTo(targetTuning.MaximumHull));
+            Assert.That(report.Eliminated, Is.False);
+        }
+
+        [Test]
+        public void CriticalRailgunEliminatesFullShieldAndHullTarget()
+        {
+            TargetState state = TargetState.Create(targetTuning);
+            DamageReport report = TargetSimulation.ApplyDamage(
+                ref state,
+                weaponTuning.RailgunDamageProfile,
+                HitRegionType.Critical,
+                targetTuning);
+
+            Assert.That(report.WasCritical, Is.True);
+            Assert.That(report.ShieldBypassed, Is.True);
+            Assert.That(report.ShieldDamage, Is.EqualTo(0f));
+            Assert.That(report.HullDamage, Is.EqualTo(targetTuning.MaximumHull));
+            Assert.That(state.Shield, Is.EqualTo(targetTuning.MaximumShield));
+            Assert.That(report.Eliminated, Is.True);
+            Assert.That(state.IsEliminated, Is.True);
+        }
+
+        [Test]
+        public void UnshieldedPrimaryCockpitHitEliminatesFullHullTarget()
+        {
+            TargetState state = TargetState.Create(targetTuning);
+            state.Shield = 0f;
+            DamageReport report = TargetSimulation.ApplyDamage(
+                ref state,
+                weaponTuning.PrimaryDamageProfile,
+                HitRegionType.Critical,
+                targetTuning);
+
+            Assert.That(report.ShieldBypassed, Is.False);
+            Assert.That(report.HullDamage, Is.EqualTo(targetTuning.MaximumHull));
+            Assert.That(report.Eliminated, Is.True);
+        }
+
+        [Test]
+        public void EliminatedTargetRespawnsAtFullStrengthAfterDelay()
+        {
+            TargetState state = TargetState.Create(targetTuning);
+            TargetSimulation.ApplyDamage(
+                ref state,
+                weaponTuning.RailgunDamageProfile,
+                HitRegionType.Critical,
+                targetTuning);
+
+            bool earlyRespawn = TargetSimulation.Step(
+                ref state,
+                targetTuning,
+                targetTuning.RespawnDelay - 0.1f);
+            bool completedRespawn = TargetSimulation.Step(
+                ref state,
+                targetTuning,
+                0.1f);
+
+            Assert.That(earlyRespawn, Is.False);
+            Assert.That(completedRespawn, Is.True);
+            Assert.That(state.IsEliminated, Is.False);
+            Assert.That(state.Shield, Is.EqualTo(targetTuning.MaximumShield));
+            Assert.That(state.Hull, Is.EqualTo(targetTuning.MaximumHull));
         }
     }
 }

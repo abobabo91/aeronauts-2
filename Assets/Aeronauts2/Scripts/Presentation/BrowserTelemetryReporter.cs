@@ -14,6 +14,11 @@ namespace Aeronauts2.Presentation
         [SerializeField] private FlightMotor flightMotor;
         [SerializeField] private AimCameraController aimCamera;
         [SerializeField] private PlayerWeaponController weapon;
+        [SerializeField] private CombatantHealth playerHealth;
+        [SerializeField] private CombatantHealth botHealth;
+        [SerializeField] private BotFlightController botFlight;
+        [SerializeField] private BotWeaponController botWeapon;
+        [SerializeField] private DuelMatchController match;
 
         private readonly BrowserTelemetrySnapshot snapshot = new();
         private float timeUntilNextReport;
@@ -21,11 +26,21 @@ namespace Aeronauts2.Presentation
         public void Configure(
             FlightMotor motor,
             AimCameraController cameraController,
-            PlayerWeaponController weaponController)
+            PlayerWeaponController weaponController,
+            CombatantHealth playerCombatant,
+            CombatantHealth botCombatant,
+            BotFlightController botFlightController,
+            BotWeaponController botWeaponController,
+            DuelMatchController duelMatch)
         {
             flightMotor = motor;
             aimCamera = cameraController;
             weapon = weaponController;
+            playerHealth = playerCombatant;
+            botHealth = botCombatant;
+            botFlight = botFlightController;
+            botWeapon = botWeaponController;
+            match = duelMatch;
         }
 
         private void Update()
@@ -65,10 +80,31 @@ namespace Aeronauts2.Presentation
             snapshot.railgunShots = weapon.RailgunShotsFired;
             snapshot.hits = weapon.Hits;
             snapshot.criticalHits = weapon.CriticalHits;
+            snapshot.eliminations = weapon.Eliminations;
             snapshot.railgunAmmo = weaponState.RailgunAmmo;
             snapshot.activeProjectiles = weapon.ActiveProjectileCount;
+            snapshot.lastTargetShield = weapon.LastTargetShield;
+            snapshot.lastTargetHull = weapon.LastTargetHull;
+            snapshot.lastHitBrokeShield = weapon.LastHitBrokeShield;
+            snapshot.lastHitBypassedShield = weapon.LastHitBypassedShield;
+            snapshot.lastHitEliminated = weapon.LastHitEliminated;
             snapshot.muzzleBlocked = weapon.MuzzleBlocked;
             snapshot.lastShotWasBlocked = weapon.LastShotWasBlocked;
+            snapshot.playerShield = playerHealth != null ? playerHealth.Shield : 0f;
+            snapshot.playerHull = playerHealth != null ? playerHealth.Hull : 0f;
+            snapshot.playerEliminated = playerHealth != null && playerHealth.IsEliminated;
+            snapshot.botShield = botHealth != null ? botHealth.Shield : 0f;
+            snapshot.botHull = botHealth != null ? botHealth.Hull : 0f;
+            snapshot.botEliminated = botHealth != null && botHealth.IsEliminated;
+            snapshot.botSpeed = botFlight != null ? botFlight.State.Speed : 0f;
+            snapshot.botAlignmentError = botFlight != null
+                ? botFlight.VelocityAlignmentErrorDegrees
+                : 0f;
+            snapshot.botShots = botWeapon != null ? botWeapon.PrimaryShotsFired : 0;
+            snapshot.botHits = botWeapon != null ? botWeapon.Hits : 0;
+            snapshot.playerScore = match != null ? match.PlayerScore : 0;
+            snapshot.botScore = match != null ? match.BotScore : 0;
+            snapshot.matchComplete = match != null && match.MatchComplete;
             Aeronauts2_ReportTelemetry(JsonUtility.ToJson(snapshot));
 #endif
         }
@@ -115,10 +151,29 @@ namespace Aeronauts2.Presentation
             public int railgunShots;
             public int hits;
             public int criticalHits;
+            public int eliminations;
             public int railgunAmmo;
             public int activeProjectiles;
+            public float lastTargetShield;
+            public float lastTargetHull;
+            public bool lastHitBrokeShield;
+            public bool lastHitBypassedShield;
+            public bool lastHitEliminated;
             public bool muzzleBlocked;
             public bool lastShotWasBlocked;
+            public float playerShield;
+            public float playerHull;
+            public bool playerEliminated;
+            public float botShield;
+            public float botHull;
+            public bool botEliminated;
+            public float botSpeed;
+            public float botAlignmentError;
+            public int botShots;
+            public int botHits;
+            public int playerScore;
+            public int botScore;
+            public bool matchComplete;
         }
     }
 }

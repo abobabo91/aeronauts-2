@@ -30,9 +30,15 @@ namespace Aeronauts2.Tests
             Assert.That(Object.FindFirstObjectByType<AimCameraController>(), Is.Not.Null);
             Assert.That(Object.FindFirstObjectByType<FlightDebugHud>(), Is.Not.Null);
             Assert.That(Object.FindFirstObjectByType<PlayerWeaponController>(), Is.Not.Null);
+            Assert.That(Object.FindFirstObjectByType<PlayerCombatantController>(), Is.Not.Null);
+            Assert.That(Object.FindFirstObjectByType<BotFlightController>(), Is.Not.Null);
+            Assert.That(Object.FindFirstObjectByType<BotWeaponController>(), Is.Not.Null);
+            Assert.That(Object.FindFirstObjectByType<DuelMatchController>(), Is.Not.Null);
+            Assert.That(Object.FindFirstObjectByType<CombatDrillController>(), Is.Not.Null);
             Assert.That(Object.FindFirstObjectByType<CombatDebugHud>(), Is.Not.Null);
             Assert.That(Object.FindFirstObjectByType<BrowserTelemetryReporter>(), Is.Not.Null);
             Assert.That(Object.FindObjectsByType<TargetDummy>(FindObjectsSortMode.None).Length, Is.EqualTo(3));
+            Assert.That(Object.FindObjectsByType<CombatantHealth>(FindObjectsSortMode.None).Length, Is.EqualTo(5));
             Assert.That(Object.FindObjectsByType<TargetHitRegion>(FindObjectsSortMode.None)
                 .Any(region => region.RegionType == HitRegionType.Critical), Is.True);
             Assert.That(UnityEngine.Camera.main, Is.Not.Null);
@@ -40,9 +46,17 @@ namespace Aeronauts2.Tests
             PlayerWeaponController weapon = Object.FindFirstObjectByType<PlayerWeaponController>();
             Assert.That(weapon.CombatOrigin, Is.Not.Null);
             Assert.That(weapon.CombatOrigin.name, Is.EqualTo("HeadCockpitCombatOrigin"));
-            Transform cockpitMarker = GameObject.Find("CockpitMarker").transform;
+            Transform cockpitMarker = weapon.CombatOrigin.parent.Find("CockpitMarker");
+            Assert.That(cockpitMarker, Is.Not.Null);
             Assert.That(weapon.CombatOrigin.parent, Is.EqualTo(cockpitMarker.parent));
             Assert.That(weapon.CombatOrigin.localPosition, Is.EqualTo(cockpitMarker.localPosition));
+            AssertCombatantHasBodyAndCriticalRegions(weapon.GetComponent<CombatantHealth>());
+
+            BotWeaponController botWeapon = Object.FindFirstObjectByType<BotWeaponController>();
+            Assert.That(botWeapon.CombatOrigin, Is.Not.Null);
+            Assert.That(botWeapon.CombatOrigin.name, Is.EqualTo("HeadCockpitCombatOrigin"));
+            AssertCombatantHasBodyAndCriticalRegions(botWeapon.GetComponent<CombatantHealth>());
+            Assert.That(Object.FindFirstObjectByType<DuelMatchController>().ScoreToWin, Is.EqualTo(5));
             Assert.That(GameObject.Find("HeadOriginBlockedMarker"), Is.Not.Null);
 
             int missingScriptCount = scene.GetRootGameObjects()
@@ -52,6 +66,15 @@ namespace Aeronauts2.Tests
             EditorBuildSettingsScene buildScene = EditorBuildSettings.scenes.Single();
             Assert.That(buildScene.enabled, Is.True);
             Assert.That(buildScene.path, Is.EqualTo(ScenePath));
+        }
+
+        private static void AssertCombatantHasBodyAndCriticalRegions(CombatantHealth combatant)
+        {
+            Assert.That(combatant, Is.Not.Null);
+            TargetHitRegion[] regions = combatant.GetComponentsInChildren<TargetHitRegion>();
+            Assert.That(regions.Any(region => region.RegionType == HitRegionType.Body), Is.True);
+            Assert.That(regions.Any(region => region.RegionType == HitRegionType.Critical), Is.True);
+            Assert.That(regions.All(region => region.Target == combatant), Is.True);
         }
 
         [Test]

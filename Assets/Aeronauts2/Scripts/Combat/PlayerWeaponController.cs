@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Aeronauts2.CameraSystem;
 using Aeronauts2.Core;
@@ -10,6 +11,8 @@ namespace Aeronauts2.Combat
     {
         private const int HitBufferSize = 32;
         private const float HitDisplayDuration = 0.14f;
+        private const float ShieldBreakDisplayDuration = 0.5f;
+        private const float EliminationDisplayDuration = 0.8f;
         private const float AimSurfaceTolerance = 0.1f;
 
         [SerializeField] private PlayerInputReader input;
@@ -22,6 +25,7 @@ namespace Aeronauts2.Combat
         private readonly List<ActiveProjectile> activeProjectiles = new();
         private readonly RaycastHit[] hitBuffer = new RaycastHit[HitBufferSize];
         private WeaponState state;
+        private CombatantHealth lastTarget;
 
         public WeaponState State => state;
         public WeaponTuning Tuning => tuning;
@@ -30,17 +34,34 @@ namespace Aeronauts2.Combat
         public int RailgunShotsFired { get; private set; }
         public int Hits { get; private set; }
         public int CriticalHits { get; private set; }
+        public int Eliminations { get; private set; }
         public int ActiveProjectileCount => activeProjectiles.Count;
         public int TotalShotsFired => PrimaryShotsFired + RailgunShotsFired;
         public float Accuracy => TotalShotsFired > 0 ? (float)Hits / TotalShotsFired : 0f;
         public int LastHitSequence { get; private set; }
         public bool LastHitWasCritical { get; private set; }
+        public bool LastHitBrokeShield { get; private set; }
+        public bool LastHitBypassedShield { get; private set; }
+        public bool LastHitEliminated { get; private set; }
+        public float LastHitShieldDamage { get; private set; }
+        public float LastHitHullDamage { get; private set; }
         public float LastHitDisplayRemaining { get; private set; }
-        public float LastTargetShield { get; private set; }
-        public float LastTargetHull { get; private set; }
+        public float LastTargetShield => lastTarget != null ? lastTarget.Shield : 0f;
+        public float LastTargetHull => lastTarget != null ? lastTarget.Hull : 0f;
+        public float LastTargetMaximumShield => lastTarget != null && lastTarget.Tuning != null
+            ? lastTarget.Tuning.MaximumShield
+            : 0f;
+        public float LastTargetMaximumHull => lastTarget != null && lastTarget.Tuning != null
+            ? lastTarget.Tuning.MaximumHull
+            : 0f;
+        public float LastTargetRespawnRemaining => lastTarget != null
+            ? lastTarget.RespawnRemaining
+            : 0f;
+        public bool LastTargetIsEliminated => lastTarget != null && lastTarget.IsEliminated;
         public bool MuzzleBlocked { get; private set; }
         public bool LastShotWasBlocked { get; private set; }
         public Vector3 LastShotOrigin { get; private set; }
+        public event Action<PlayerWeaponController, CombatantHealth> TargetEliminated;
 
         public void Configure(
             PlayerInputReader inputReader,
@@ -68,11 +89,6 @@ namespace Aeronauts2.Combat
             if (input == null || aimCamera == null || tuning == null)
             {
                 return;
-            }
-
-            if (input.ConsumeResetPressed())
-            {
-                ResetCombat();
             }
 
             UpdateMuzzleObstruction(aimCamera.AimRay);
@@ -145,9 +161,8 @@ namespace Aeronauts2.Combat
                     if (hitRegion != null)
                     {
                         DamageReport report = hitRegion.ApplyDamage(
-                            tuning.PrimaryDamage,
-                            tuning.CriticalDamageMultiplier);
-                        RegisterHit(report);
+                            tuning.PrimaryDamageProfile);
+                        RegisterHit(hitRegion.Target, report);
                     }
 
                     RemoveProjectile(index);
@@ -172,11 +187,16 @@ namespace Aeronauts2.Combat
             RailgunShotsFired = 0;
             Hits = 0;
             CriticalHits = 0;
+            Eliminations = 0;
             LastHitSequence = 0;
             LastHitWasCritical = false;
+            LastHitBrokeShield = false;
+            LastHitBypassedShield = false;
+            LastHitEliminated = false;
+            LastHitShieldDamage = 0f;
+            LastHitHullDamage = 0f;
             LastHitDisplayRemaining = 0f;
-            LastTargetShield = 0f;
-            LastTargetHull = 0f;
+            lastTarget = null;
             MuzzleBlocked = false;
             LastShotWasBlocked = false;
             LastShotOrigin = GetCombatOriginPosition();
@@ -238,9 +258,8 @@ namespace Aeronauts2.Combat
                 if (hitRegion != null)
                 {
                     DamageReport report = hitRegion.ApplyDamage(
-                        tuning.RailgunDamage,
-                        tuning.CriticalDamageMultiplier);
-                    RegisterHit(report);
+                        tuning.RailgunDamageProfile);
+                    RegisterHit(hitRegion.Target, report);
                 }
             }
 
@@ -340,16 +359,16 @@ namespace Aeronauts2.Combat
                 return true;
             }
 
-            TargetDummy cameraTarget = cameraSurface != null
-                ? cameraSurface.GetComponentInParent<TargetDummy>()
+            CombatantHealth cameraTarget = cameraSurface != null
+                ? cameraSurface.GetComponentInParent<CombatantHealth>()
                 : null;
-            TargetDummy muzzleTarget = muzzleSurface != null
-                ? muzzleSurface.GetComponentInParent<TargetDummy>()
+            CombatantHealth muzzleTarget = muzzleSurface != null
+                ? muzzleSurface.GetComponentInParent<CombatantHealth>()
                 : null;
             return cameraTarget != null && cameraTarget == muzzleTarget;
         }
 
-        private void RegisterHit(DamageReport report)
+        private void RegisterHit(CombatantHealth target, DamageReport report)
         {
             if (report.DamageApplied <= 0f)
             {
@@ -362,11 +381,25 @@ namespace Aeronauts2.Combat
                 CriticalHits++;
             }
 
+            if (report.Eliminated)
+            {
+                Eliminations++;
+                TargetEliminated?.Invoke(this, target);
+            }
+
             LastHitSequence++;
+            lastTarget = target;
             LastHitWasCritical = report.WasCritical;
-            LastHitDisplayRemaining = HitDisplayDuration;
-            LastTargetShield = report.ShieldRemaining;
-            LastTargetHull = report.HullRemaining;
+            LastHitBrokeShield = report.ShieldBroken;
+            LastHitBypassedShield = report.ShieldBypassed;
+            LastHitEliminated = report.Eliminated;
+            LastHitShieldDamage = report.ShieldDamage;
+            LastHitHullDamage = report.HullDamage;
+            LastHitDisplayRemaining = report.Eliminated
+                ? EliminationDisplayDuration
+                : report.ShieldBroken
+                    ? ShieldBreakDisplayDuration
+                    : HitDisplayDuration;
         }
 
         private void CreateRailgunTrace(Vector3 start, Vector3 end)
